@@ -5,9 +5,7 @@ recycle_trash/
 build/
 dist/
 *.spec
-.agent/
 agents_brain/
-TIMELINE.md
 GEMINI.md
 TALKS.md
 session_brain.md
