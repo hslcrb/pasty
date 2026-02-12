@@ -232,26 +232,31 @@ class PastyApp(QMainWindow):
     def apply_styles(self):
         """Apply QSS stylesheet with Frutiger Aero theme"""
         if self.resolved_theme == "dark":
-            gradient_start = "#0A1628"
-            gradient_end = "#1C3A52"
+            bg_color = "#0A1628"
             text_primary = "#E8F4F8"
             text_secondary = "#8FB3D5"
             accent = "#4A90E2"
             card = "#1C2E4A"
             rec_color = "#E24A4A"
+            bg_image = ""
         else:
-            gradient_start = "#87CEEB"
-            gradient_end = "#E8F4F8"
+            bg_color = "#87CEEB"
             text_primary = "#1A3A52"
             text_secondary = "#5A7A8C"
             accent = "#2E7FC4"
             card = "#FFFFFF"
             rec_color = "#D32F2F"
+            # Use background image for light mode
+            bg_path = Path("assets/background.png")
+            if bg_path.exists():
+                bg_image = f"background-image: url({bg_path.absolute()});"
+            else:
+                bg_image = ""
         
         stylesheet = f"""
         QMainWindow {{
-            background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                stop:0 {gradient_start}, stop:1 {gradient_end});
+            background-color: {bg_color};
+            {bg_image}
         }}
         
         QWidget {{
