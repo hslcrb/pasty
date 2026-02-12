@@ -124,11 +124,6 @@ class PastyApp(QMainWindow):
         self.setWindowTitle(f"{STRINGS[self.current_language]['title']} {VERSION}")
         self.setFixedSize(500, 450)
         
-        # Set icon
-        icon_path = Path("assets/icon.ico")
-        if icon_path.exists():
-            self.setWindowIcon(QIcon(str(icon_path)))
-        
         # Simple solid background
         if self.resolved_theme == "dark":
             self.setStyleSheet("QMainWindow { background-color: #1a1a1a; }")
