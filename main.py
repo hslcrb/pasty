@@ -182,20 +182,8 @@ class PastyApp:
 
         self.root.geometry("600x550")
         
-        # Main canvas for background
-        self.canvas = tk.Canvas(self.root, width=600, height=550, highlightthickness=0)
-        self.canvas.pack(fill=tk.BOTH, expand=True)
-        
-        # Background image
-        if self.bg_photo:
-            self.canvas.create_image(0, 0, image=self.bg_photo, anchor="nw")
-        
-        # Main frame on canvas
-        main_frame = tk.Frame(self.canvas, bd=0)
-        self.canvas.create_window(300, 275, window=main_frame)
-        
         # Header with controls
-        header = tk.Frame(main_frame, pady=20, bd=0)
+        header = tk.Frame(self.root, pady=20, bd=0)
         header.pack(fill=tk.X)
         
         # Theme and Language buttons
@@ -216,7 +204,7 @@ class PastyApp:
         self.subtitle_label.pack()
 
         # Main Container
-        container = tk.Frame(main_frame, padx=40, bd=0)
+        container = tk.Frame(self.root, padx=40, bd=0)
         container.pack(fill=tk.BOTH, expand=True)
 
         # Source Selection
@@ -263,7 +251,7 @@ class PastyApp:
         self.start_btn.bind("<ButtonRelease-1>", self.on_release_start)
         
         # Copyright
-        self.copyright_label = tk.Label(main_frame, font=("Segoe UI", 8), pady=10, bd=0)
+        self.copyright_label = tk.Label(self.root, font=("Segoe UI", 8), pady=10, bd=0)
         self.copyright_label.pack(side=tk.BOTTOM)
         
         # Set icon if available
@@ -278,21 +266,26 @@ class PastyApp:
         """Apply current theme colors"""
         theme = THEMES[self.resolved_theme]
         
-        # Canvas background
-        self.canvas.configure(bg=theme["bg"])
-        
-        # Root and frames
+        # Root and all frames with gradient bg color
         self.root.configure(bg=theme["bg"])
+        
+        # Configure all frames
+        for widget in self.root.winfo_children():
+            if isinstance(widget, tk.Frame):
+                widget.configure(bg=theme["bg"])
+                for child in widget.winfo_children():
+                    if isinstance(child, tk.Frame):
+                        child.configure(bg=theme["bg"])
         
         # Control buttons with slight transparency effect
         self.theme_btn.configure(bg=theme["card"], fg=theme["text_primary"], activebackground=theme["accent"])
         self.lang_btn.configure(bg=theme["card"], fg=theme["text_primary"], activebackground=theme["accent"])
         
-        # Labels
-        self.title_label.configure(fg=theme["accent"], bg="")
-        self.subtitle_label.configure(fg=theme["text_secondary"], bg="")
-        self.source_label_widget.configure(fg=theme["text_primary"], bg="")
-        self.target_label_widget.configure(fg=theme["text_primary"], bg="")
+        # Labels (transparent bg for canvas overlay)
+        self.title_label.configure(fg=theme["accent"], bg=theme["bg"])
+        self.subtitle_label.configure(fg=theme["text_secondary"], bg=theme["bg"])
+        self.source_label_widget.configure(fg=theme["text_primary"], bg=theme["bg"])
+        self.target_label_widget.configure(fg=theme["text_primary"], bg=theme["bg"])
         
         # Entry frames with card style
         self.source_entry_frame.configure(bg=theme["card"])
@@ -305,9 +298,9 @@ class PastyApp:
         
         # REC label
         if self.is_recording:
-            self.rec_label.configure(fg=theme["rec"], bg="")
+            self.rec_label.configure(fg=theme["rec"], bg=theme["bg"])
         else:
-            self.rec_label.configure(fg=theme["bg"], bg="")
+            self.rec_label.configure(fg=theme["bg"], bg=theme["bg"])
         
         # Start button
         if self.start_btn['state'] == tk.NORMAL:
@@ -316,7 +309,7 @@ class PastyApp:
             self.start_btn.configure(bg=theme["card"], fg=theme["text_secondary"])
         
         # Copyright
-        self.copyright_label.configure(bg="", fg=theme["text_secondary"])
+        self.copyright_label.configure(bg=theme["bg"], fg=theme["text_secondary"])
 
     def apply_language(self):
         """Apply current language strings"""
