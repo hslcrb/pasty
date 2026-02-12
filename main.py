@@ -11,11 +11,12 @@ import sys
 import json
 import random
 import threading
-import tkinter as tk
-from tkinter import filedialog, font, messagebox
-from pynput import keyboard
 from pathlib import Path
-from PIL import Image, ImageTk
+from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, 
+                                QHBoxLayout, QLabel, QPushButton, QFileDialog, QFrame)
+from PySide6.QtCore import Qt, QTimer
+from PySide6.QtGui import QIcon, QPalette, QColor, QLinearGradient
+from pynput import keyboard
 
 try:
     import darkdetect
@@ -24,27 +25,7 @@ except ImportError:
 
 # Constants
 APP_NAME = "Pasty"
-VERSION = "v0.3.0"
-
-# Frutiger Aero Theme Colors (Blue tones)
-THEMES = {
-    "dark": {
-        "bg": "#0A1628",
-        "card": "#1C2E4A",
-        "accent": "#4A90E2",  
-        "rec": "#E24A4A",
-        "text_primary": "#E8F4F8",
-        "text_secondary": "#8FB3D5"
-    },
-    "light": {
-        "bg": "#E8F4F8",
-        "card": "#FFFFFF",
-        "accent": "#2E7FC4",
-        "rec": "#D32F2F",
-        "text_primary": "#1A3A52",
-        "text_secondary": "#5A7A8C"
-    }
-}
+VERSION = "v0.4.0"
 
 # Language Strings
 STRINGS = {
@@ -78,18 +59,17 @@ STRINGS = {
     }
 }
 
-class PastyApp:
-    def __init__(self, root):
-        self.root = root
-        self.root.resizable(False, False)
+class PastyApp(QMainWindow):
+    def __init__(self):
+        super().__init__()
         
-        # Settings in project directory
+        # Settings
         self.settings_path = Path("settings.json")
         self.load_settings()
         
         # State
-        self.source_path = tk.StringVar(value="")
-        self.target_path = tk.StringVar(value="")
+        self.source_path = ""
+        self.target_path = ""
         self.is_recording = False
         self.source_content = ""
         self.content_index = 0
@@ -98,23 +78,13 @@ class PastyApp:
         self.kb_controller = keyboard.Controller()
         self.listener = None
         
-        # Background image
-        self.bg_image = None
-        self.bg_photo = None
-        
         self.setup_ui()
-        self.load_background()
-        self.apply_theme()
-        self.apply_language()
+        self.apply_styles()
+        self.update_language()
         self.start_keyboard_listener()
 
     def load_settings(self):
         """Load settings from JSON, create if doesn't exist"""
-        default_settings = {
-            "theme": "system",
-            "language": "ko"
-        }
-        
         if self.settings_path.exists():
             try:
                 with open(self.settings_path, 'r', encoding='utf-8') as f:
@@ -125,7 +95,6 @@ class PastyApp:
                 self.current_theme = "system"
                 self.current_language = "ko"
         else:
-            # Auto-create settings.json
             self.current_theme = "system"
             self.current_language = "ko"
             self.save_settings()
@@ -151,187 +120,252 @@ class PastyApp:
         except Exception as e:
             print(f"Failed to save settings: {e}")
 
-    def load_background(self):
-        """Load background image if available"""
-        bg_path = Path("assets/background.png")
-        if bg_path.exists():
-            try:
-                self.bg_image = Image.open(bg_path)
-                # Resize to fit window
-                self.bg_image = self.bg_image.resize((600, 550), Image.Resampling.LANCZOS)
-                self.bg_photo = ImageTk.PhotoImage(self.bg_image)
-            except Exception as e:
-                print(f"Failed to load background: {e}")
-                self.bg_image = None
-
     def setup_ui(self):
         """Setup UI elements"""
-        # Fonts
-        try:
-            self.title_font = font.Font(family="Segoe UI", size=24, weight="bold")
-            self.label_font = font.Font(family="Segoe UI", size=10)
-            self.path_font = font.Font(family="Consolas", size=9)
-            self.btn_font = font.Font(family="Segoe UI", size=12, weight="bold")
-            self.icon_font = font.Font(family="Sans", size=14)
-        except:
-            self.title_font = font.Font(family="sans-serif", size=24, weight="bold")
-            self.label_font = font.Font(family="sans-serif", size=10)
-            self.path_font = font.Font(family="monospace", size=9)
-            self.btn_font = font.Font(family="sans-serif", size=12, weight="bold")
-            self.icon_font = font.Font(family="sans-serif", size=14)
-
-        self.root.geometry("600x550")
+        self.setWindowTitle(f"{STRINGS[self.current_language]['title']} {VERSION}")
+        self.setFixedSize(600, 550)
         
-        # Header with controls
-        header = tk.Frame(self.root, pady=20, bd=0)
-        header.pack(fill=tk.X)
-        
-        # Theme and Language buttons
-        controls_frame = tk.Frame(header, bd=0)
-        controls_frame.pack(side=tk.RIGHT, padx=20)
-        
-        self.theme_btn = tk.Button(controls_frame, text="◐", font=self.icon_font, bd=0, padx=8, pady=4, command=self.toggle_theme, cursor="hand2", relief=tk.FLAT)
-        self.theme_btn.pack(side=tk.LEFT, padx=2)
-        
-        self.lang_btn = tk.Button(controls_frame, text="한/en", font=self.label_font, bd=0, padx=8, pady=4, command=self.toggle_language, cursor="hand2", relief=tk.FLAT)
-        self.lang_btn.pack(side=tk.LEFT, padx=2)
-        
-        # Title
-        self.title_label = tk.Label(header, font=self.title_font, bd=0)
-        self.title_label.pack()
-        
-        self.subtitle_label = tk.Label(header, font=self.label_font, bd=0)
-        self.subtitle_label.pack()
-
-        # Main Container
-        container = tk.Frame(self.root, padx=40, bd=0)
-        container.pack(fill=tk.BOTH, expand=True)
-
-        # Source Selection
-        source_frame = tk.Frame(container, pady=10, bd=0)
-        source_frame.pack(fill=tk.X)
-        
-        self.source_label_widget = tk.Label(source_frame, font=self.label_font, bd=0)
-        self.source_label_widget.pack(anchor="w")
-        
-        self.source_entry_frame = tk.Frame(source_frame, padx=10, pady=5, bd=0, relief=tk.FLAT)
-        self.source_entry_frame.pack(fill=tk.X, pady=5)
-        
-        self.source_path_label = tk.Label(self.source_entry_frame, textvariable=self.source_path, font=self.path_font, anchor="w", bd=0)
-        self.source_path_label.pack(side=tk.LEFT, fill=tk.X, expand=True)
-        
-        self.source_browse_btn = tk.Button(self.source_entry_frame, font=self.label_font, bd=0, padx=10, pady=2, command=self.browse_source, cursor="hand2", relief=tk.FLAT)
-        self.source_browse_btn.pack(side=tk.RIGHT)
-
-        # Target Selection
-        target_frame = tk.Frame(container, pady=10, bd=0)
-        target_frame.pack(fill=tk.X)
-        
-        self.target_label_widget = tk.Label(target_frame, font=self.label_font, bd=0)
-        self.target_label_widget.pack(anchor="w")
-        
-        self.target_entry_frame = tk.Frame(target_frame, padx=10, pady=5, bd=0, relief=tk.FLAT)
-        self.target_entry_frame.pack(fill=tk.X, pady=5)
-        
-        self.target_path_label = tk.Label(self.target_entry_frame, textvariable=self.target_path, font=self.path_font, anchor="w", bd=0)
-        self.target_path_label.pack(side=tk.LEFT, fill=tk.X, expand=True)
-        
-        self.target_browse_btn = tk.Button(self.target_entry_frame, font=self.label_font, bd=0, padx=10, pady=2, command=self.browse_target, cursor="hand2", relief=tk.FLAT)
-        self.target_browse_btn.pack(side=tk.RIGHT)
-
-        # REC Indicator
-        self.rec_label = tk.Label(container, font=self.btn_font, pady=10, bd=0)
-        self.rec_label.pack()
-
-        # Start Button
-        self.start_btn = tk.Button(container, font=self.btn_font, bd=0, pady=15, state=tk.DISABLED, cursor="hand2", relief=tk.FLAT)
-        self.start_btn.pack(fill=tk.X, pady=20)
-        
-        self.start_btn.bind("<ButtonPress-1>", self.on_press_start)
-        self.start_btn.bind("<ButtonRelease-1>", self.on_release_start)
-        
-        # Copyright
-        self.copyright_label = tk.Label(self.root, font=("Segoe UI", 8), pady=10, bd=0)
-        self.copyright_label.pack(side=tk.BOTTOM)
-        
-        # Set icon if available
+        # Set icon
         icon_path = Path("assets/icon.ico")
         if icon_path.exists():
-            try:
-                self.root.iconbitmap(str(icon_path))
-            except:
-                pass
-
-    def apply_theme(self):
-        """Apply current theme colors"""
-        theme = THEMES[self.resolved_theme]
+            self.setWindowIcon(QIcon(str(icon_path)))
         
-        # Root and all frames with gradient bg color
-        self.root.configure(bg=theme["bg"])
+        # Central widget
+        central_widget = QWidget()
+        self.setCentralWidget(central_widget)
         
-        # Configure all frames
-        for widget in self.root.winfo_children():
-            if isinstance(widget, tk.Frame):
-                widget.configure(bg=theme["bg"])
-                for child in widget.winfo_children():
-                    if isinstance(child, tk.Frame):
-                        child.configure(bg=theme["bg"])
+        # Main layout
+        main_layout = QVBoxLayout(central_widget)
+        main_layout.setContentsMargins(40, 20, 40, 20)
+        main_layout.setSpacing(15)
         
-        # Control buttons with slight transparency effect
-        self.theme_btn.configure(bg=theme["card"], fg=theme["text_primary"], activebackground=theme["accent"])
-        self.lang_btn.configure(bg=theme["card"], fg=theme["text_primary"], activebackground=theme["accent"])
+        # Header with controls
+        header_layout = QHBoxLayout()
+        header_layout.addStretch()
         
-        # Labels (transparent bg for canvas overlay)
-        self.title_label.configure(fg=theme["accent"], bg=theme["bg"])
-        self.subtitle_label.configure(fg=theme["text_secondary"], bg=theme["bg"])
-        self.source_label_widget.configure(fg=theme["text_primary"], bg=theme["bg"])
-        self.target_label_widget.configure(fg=theme["text_primary"], bg=theme["bg"])
+        self.theme_btn = QPushButton("◐")
+        self.theme_btn.setObjectName("ctrlBtn")
+        self.theme_btn.setFixedSize(40, 30)
+        self.theme_btn.clicked.connect(self.toggle_theme)
+        header_layout.addWidget(self.theme_btn)
         
-        # Entry frames with card style
-        self.source_entry_frame.configure(bg=theme["card"])
-        self.source_path_label.configure(fg=theme["text_secondary"], bg=theme["card"])
-        self.source_browse_btn.configure(bg=theme["accent"], fg=theme["bg"], activebackground=theme["accent"])
+        self.lang_btn = QPushButton("한/en")
+        self.lang_btn.setObjectName("ctrlBtn")
+        self.lang_btn.setFixedSize(60, 30)
+        self.lang_btn.clicked.connect(self.toggle_language)
+        header_layout.addWidget(self.lang_btn)
         
-        self.target_entry_frame.configure(bg=theme["card"])
-        self.target_path_label.configure(fg=theme["text_secondary"], bg=theme["card"])
-        self.target_browse_btn.configure(bg=theme["accent"], fg=theme["bg"], activebackground=theme["accent"])
+        main_layout.addLayout(header_layout)
         
-        # REC label
-        if self.is_recording:
-            self.rec_label.configure(fg=theme["rec"], bg=theme["bg"])
-        else:
-            self.rec_label.configure(fg=theme["bg"], bg=theme["bg"])
+        # Title
+        self.title_label = QLabel()
+        self.title_label.setObjectName("titleLabel")
+        self.title_label.setAlignment(Qt.AlignCenter)
+        main_layout.addWidget(self.title_label)
+        
+        self.subtitle_label = QLabel()
+        self.subtitle_label.setObjectName("subtitleLabel")
+        self.subtitle_label.setAlignment(Qt.AlignCenter)
+        main_layout.addWidget(self.subtitle_label)
+        
+        main_layout.addSpacing(20)
+        
+        # Source file
+        self.source_label = QLabel()
+        self.source_label.setObjectName("fieldLabel")
+        main_layout.addWidget(self.source_label)
+        
+        source_layout = QHBoxLayout()
+        self.source_path_label = QLabel("")
+        self.source_path_label.setObjectName("pathLabel")
+        source_layout.addWidget(self.source_path_label, 1)
+        
+        self.source_browse_btn = QPushButton()
+        self.source_browse_btn.setObjectName("browseBtn")
+        self.source_browse_btn.clicked.connect(self.browse_source)
+        source_layout.addWidget(self.source_browse_btn)
+        
+        main_layout.addLayout(source_layout)
+        
+        # Target file
+        self.target_label = QLabel()
+        self.target_label.setObjectName("fieldLabel")
+        main_layout.addWidget(self.target_label)
+        
+        target_layout = QHBoxLayout()
+        self.target_path_label = QLabel("")
+        self.target_path_label.setObjectName("pathLabel")
+        target_layout.addWidget(self.target_path_label, 1)
+        
+        self.target_browse_btn = QPushButton()
+        self.target_browse_btn.setObjectName("browseBtn")
+        self.target_browse_btn.clicked.connect(self.browse_target)
+        target_layout.addWidget(self.target_browse_btn)
+        
+        main_layout.addLayout(target_layout)
+        
+        main_layout.addSpacing(10)
+        
+        # REC indicator
+        self.rec_label = QLabel()
+        self.rec_label.setObjectName("recLabel")
+        self.rec_label.setAlignment(Qt.AlignCenter)
+        main_layout.addWidget(self.rec_label)
         
         # Start button
-        if self.start_btn['state'] == tk.NORMAL:
-            self.start_btn.configure(bg=theme["accent"], fg=theme["bg"], activebackground=theme["rec"])
-        else:
-            self.start_btn.configure(bg=theme["card"], fg=theme["text_secondary"])
+        self.start_btn = QPushButton()
+        self.start_btn.setObjectName("startBtn")
+        self.start_btn.setFixedHeight(50)
+        self.start_btn.setEnabled(False)
+        self.start_btn.pressed.connect(self.on_press_start)
+        self.start_btn.released.connect(self.on_release_start)
+        main_layout.addWidget(self.start_btn)
+        
+        main_layout.addStretch()
         
         # Copyright
-        self.copyright_label.configure(bg=theme["bg"], fg=theme["text_secondary"])
+        self.copyright_label = QLabel()
+        self.copyright_label.setObjectName("copyrightLabel")
+        self.copyright_label.setAlignment(Qt.AlignCenter)
+        main_layout.addWidget(self.copyright_label)
 
-    def apply_language(self):
-        """Apply current language strings"""
+    def apply_styles(self):
+        """Apply QSS stylesheet with Frutiger Aero theme"""
+        if self.resolved_theme == "dark":
+            gradient_start = "#0A1628"
+            gradient_end = "#1C3A52"
+            text_primary = "#E8F4F8"
+            text_secondary = "#8FB3D5"
+            accent = "#4A90E2"
+            card = "#1C2E4A"
+            rec_color = "#E24A4A"
+        else:
+            gradient_start = "#87CEEB"
+            gradient_end = "#E8F4F8"
+            text_primary = "#1A3A52"
+            text_secondary = "#5A7A8C"
+            accent = "#2E7FC4"
+            card = "#FFFFFF"
+            rec_color = "#D32F2F"
+        
+        stylesheet = f"""
+        QMainWindow {{
+            background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                stop:0 {gradient_start}, stop:1 {gradient_end});
+        }}
+        
+        QWidget {{
+            background: transparent;
+            color: {text_primary};
+            font-family: 'Segoe UI', sans-serif;
+        }}
+        
+        #titleLabel {{
+            font-size: 28px;
+            font-weight: bold;
+            color: {accent};
+        }}
+        
+        #subtitleLabel {{
+            font-size: 11px;
+            color: {text_secondary};
+        }}
+        
+        #fieldLabel {{
+            font-size: 10px;
+            color: {text_primary};
+            margin-top: 10px;
+        }}
+        
+        #pathLabel {{
+            background: {card};
+            color: {text_secondary};
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-family: 'Consolas', monospace;
+            font-size: 9px;
+        }}
+        
+        #ctrlBtn {{
+            background: {card};
+            color: {text_primary};
+            border: none;
+            border-radius: 4px;
+            font-size: 12px;
+        }}
+        
+        #ctrlBtn:hover {{
+            background: {accent};
+        }}
+        
+        #browseBtn {{
+            background: {accent};
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 8px 16px;
+            font-size: 10px;
+            font-weight: bold;
+        }}
+        
+        #browseBtn:hover {{
+            background: {accent};
+            opacity: 0.8;
+        }}
+        
+        #recLabel {{
+            font-size: 14px;
+            font-weight: bold;
+            color: {'transparent' if not self.is_recording else rec_color};
+        }}
+        
+        #startBtn {{
+            background: {accent if self.start_btn.isEnabled() else card};
+            color: {'white' if self.start_btn.isEnabled() else text_secondary};
+            border: none;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: bold;
+        }}
+        
+        #startBtn:hover {{
+            background: {rec_color if self.start_btn.isEnabled() else card};
+        }}
+        
+        #startBtn:disabled {{
+            background: {card};
+            color: {text_secondary};
+        }}
+        
+        #copyrightLabel {{
+            font-size: 8px;
+            color: {text_secondary};
+        }}
+        """
+        
+        self.setStyleSheet(stylesheet)
+
+    def update_language(self):
+        """Update all text with current language"""
         s = STRINGS[self.current_language]
         
-        self.root.title(f"{s['title']} {VERSION}")
-        self.title_label.configure(text=s['title'])
-        self.subtitle_label.configure(text=s['subtitle'])
-        self.source_label_widget.configure(text=s['source_label'])
-        self.target_label_widget.configure(text=s['target_label'])
-        self.source_browse_btn.configure(text=s['browse'])
-        self.target_browse_btn.configure(text=s['browse'])
-        self.rec_label.configure(text=s['rec'])
-        self.copyright_label.configure(text=s['copyright'])
+        self.setWindowTitle(f"{s['title']} {VERSION}")
+        self.title_label.setText(s['title'])
+        self.subtitle_label.setText(s['subtitle'])
+        self.source_label.setText(s['source_label'])
+        self.target_label.setText(s['target_label'])
+        self.source_browse_btn.setText(s['browse'])
+        self.target_browse_btn.setText(s['browse'])
+        self.rec_label.setText(s['rec'])
+        self.copyright_label.setText(s['copyright'])
         
-        if self.start_btn['state'] == tk.NORMAL:
-            self.start_btn.configure(text=s['hold_to_start'])
+        if self.start_btn.isEnabled():
+            self.start_btn.setText(s['hold_to_start'])
         else:
-            self.start_btn.configure(text=s['ready'])
+            self.start_btn.setText(s['ready'])
 
     def toggle_theme(self):
-        """Toggle between light and dark themes"""
+        """Toggle theme"""
         if self.current_theme == "system":
             self.current_theme = "dark" if self.resolved_theme == "light" else "light"
         elif self.current_theme == "dark":
@@ -340,56 +374,59 @@ class PastyApp:
             self.current_theme = "dark"
         
         self.resolved_theme = self.current_theme
-        self.apply_theme()
+        self.apply_styles()
         self.save_settings()
 
     def toggle_language(self):
-        """Toggle between Korean and English"""
+        """Toggle language"""
         self.current_language = "en" if self.current_language == "ko" else "ko"
-        self.apply_language()
+        self.update_language()
         self.save_settings()
 
     def browse_source(self):
         s = STRINGS[self.current_language]
-        file_path = filedialog.askopenfilename(title=s['source_label'])
+        file_path, _ = QFileDialog.getOpenFileName(self, s['source_label'])
         if file_path:
-            self.source_path.set(file_path)
+            self.source_path = file_path
+            self.source_path_label.setText(file_path)
             try:
                 with open(file_path, 'r', encoding='utf-8') as f:
                     self.source_content = f.read()
                 self.content_index = 0
                 self.check_ready()
             except Exception as e:
-                messagebox.showerror(s['error'], f"{s['failed_read']}: {e}")
+                print(f"Failed to read: {e}")
 
     def browse_target(self):
         s = STRINGS[self.current_language]
-        file_path = filedialog.askopenfilename(title=s['target_label'])
+        file_path, _ = QFileDialog.getOpenFileName(self, s['target_label'])
         if file_path:
-            self.target_path.set(file_path)
+            self.target_path = file_path
+            self.target_path_label.setText(file_path)
             self.check_ready()
 
     def check_ready(self):
         s = STRINGS[self.current_language]
-        if self.source_path.get() and self.target_path.get():
-            self.start_btn.config(state=tk.NORMAL, text=s['hold_to_start'])
-            self.apply_theme()
+        if self.source_path and self.target_path:
+            self.start_btn.setEnabled(True)
+            self.start_btn.setText(s['hold_to_start'])
         else:
-            self.start_btn.config(state=tk.DISABLED, text=s['ready'])
-            self.apply_theme()
+            self.start_btn.setEnabled(False)
+            self.start_btn.setText(s['ready'])
+        self.apply_styles()
 
-    def on_press_start(self, event):
-        if self.start_btn['state'] == tk.NORMAL:
+    def on_press_start(self):
+        if self.start_btn.isEnabled():
             s = STRINGS[self.current_language]
             self.is_recording = True
-            self.start_btn.config(text=s['pasting'])
-            self.apply_theme()
+            self.start_btn.setText(s['pasting'])
+            self.apply_styles()
 
-    def on_release_start(self, event):
+    def on_release_start(self):
         s = STRINGS[self.current_language]
         self.is_recording = False
-        self.start_btn.config(text=s['hold_to_start'])
-        self.apply_theme()
+        self.start_btn.setText(s['hold_to_start'])
+        self.apply_styles()
 
     def start_keyboard_listener(self):
         def on_press(key):
@@ -418,9 +455,9 @@ class PastyApp:
         if chars_to_add:
             threading.Thread(target=self._type_chars, args=(chars_to_add,), daemon=True).start()
             
-            if self.target_path.get():
+            if self.target_path:
                 try:
-                    with open(self.target_path.get(), 'a', encoding='utf-8') as f:
+                    with open(self.target_path, 'a', encoding='utf-8') as f:
                         f.write(chars_to_add)
                 except:
                     pass
@@ -432,6 +469,7 @@ class PastyApp:
             print(f"Simulation Error: {e}")
 
 if __name__ == "__main__":
-    root = tk.Tk()
-    app = PastyApp(root)
-    root.mainloop()
+    app = QApplication(sys.argv)
+    window = PastyApp()
+    window.show()
+    sys.exit(app.exec())
