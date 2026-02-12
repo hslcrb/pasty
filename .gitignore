@@ -6,7 +6,6 @@ build/
 dist/
 *.spec
 agents_brain/
-GEMINI.md
 TALKS.md
 session_brain.md
 settings.json

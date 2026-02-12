@@ -1,8 +1,10 @@
-Pasty (페이스티)
-Copyright 2008-2026 Rheehose (Rhee Creative).
+NOTICE
 
-This product includes software developed by Rheehose (Rhee Creative) (https://rheehose.com).
-이 제품은 Rheehose (Rhee Creative) (https://rheehose.com)에서 개발한 소프트웨어를 포함하고 있습니다.
+Pasty - Ghost-typing Utility
+Copyright 2008-2026 Rheehose (Rhee Creative)
+
+This product includes software developed by Rheehose (Rhee Creative).
+Website: https://rheehose.com
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -15,3 +17,23 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
+
+---
+
+Third-Party Dependencies:
+
+1. PySide6 (Qt for Python)
+   - License: LGPL v3 / Commercial
+   - Copyright: The Qt Company
+
+2. pynput
+   - License: LGPL v3
+   - Copyright: Moses Palmér
+
+3. Pillow
+   - License: HPND License
+   - Copyright: Jeffrey A. Clark (Alex) and contributors
+
+4. darkdetect
+   - License: BSD 3-Clause
+   - Copyright: Alberto Sottile
