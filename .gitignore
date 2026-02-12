@@ -12,3 +12,5 @@ GEMINI.md
 TALKS.md
 session_brain.md
 settings.json
+assets/
+process_assets.py

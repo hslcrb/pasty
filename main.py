@@ -15,6 +15,7 @@ import tkinter as tk
 from tkinter import filedialog, font, messagebox
 from pynput import keyboard
 from pathlib import Path
+from PIL import Image, ImageTk
 
 try:
     import darkdetect
@@ -23,25 +24,25 @@ except ImportError:
 
 # Constants
 APP_NAME = "Pasty"
-VERSION = "v0.2.0"
+VERSION = "v0.3.0"
 
-# Theme Colors
+# Frutiger Aero Theme Colors (Blue tones)
 THEMES = {
     "dark": {
-        "bg": "#121212",
-        "card": "#1E1E1E",
-        "accent": "#BB86FC",
-        "rec": "#CF6679",
-        "text_primary": "#E1E1E1",
-        "text_secondary": "#A0A0A0"
+        "bg": "#0A1628",
+        "card": "#1C2E4A",
+        "accent": "#4A90E2",  
+        "rec": "#E24A4A",
+        "text_primary": "#E8F4F8",
+        "text_secondary": "#8FB3D5"
     },
     "light": {
-        "bg": "#F5F5F5",
+        "bg": "#E8F4F8",
         "card": "#FFFFFF",
-        "accent": "#6200EE",
-        "rec": "#B00020",
-        "text_primary": "#212121",
-        "text_secondary": "#757575"
+        "accent": "#2E7FC4",
+        "rec": "#D32F2F",
+        "text_primary": "#1A3A52",
+        "text_secondary": "#5A7A8C"
     }
 }
 
@@ -59,8 +60,6 @@ STRINGS = {
         "rec": "● REC",
         "error": "오류",
         "failed_read": "파일 읽기 실패",
-        "theme_toggle_tooltip": "테마 전환",
-        "lang_toggle_tooltip": "언어 전환",
         "copyright": "Rheehose (Rhee Creative) 2008-2026"
     },
     "en": {
@@ -75,8 +74,6 @@ STRINGS = {
         "rec": "● REC",
         "error": "Error",
         "failed_read": "Failed to read file",
-        "theme_toggle_tooltip": "Toggle Theme",
-        "lang_toggle_tooltip": "Toggle Language",
         "copyright": "Rheehose (Rhee Creative) 2008-2026"
     }
 }
@@ -86,8 +83,8 @@ class PastyApp:
         self.root = root
         self.root.resizable(False, False)
         
-        # Settings
-        self.settings_path = Path.home() / ".pasty_settings.json"
+        # Settings in project directory
+        self.settings_path = Path("settings.json")
         self.load_settings()
         
         # State
@@ -101,13 +98,18 @@ class PastyApp:
         self.kb_controller = keyboard.Controller()
         self.listener = None
         
+        # Background image
+        self.bg_image = None
+        self.bg_photo = None
+        
         self.setup_ui()
+        self.load_background()
         self.apply_theme()
         self.apply_language()
         self.start_keyboard_listener()
 
     def load_settings(self):
-        """Load settings from JSON"""
+        """Load settings from JSON, create if doesn't exist"""
         default_settings = {
             "theme": "system",
             "language": "ko"
@@ -123,8 +125,10 @@ class PastyApp:
                 self.current_theme = "system"
                 self.current_language = "ko"
         else:
+            # Auto-create settings.json
             self.current_theme = "system"
             self.current_language = "ko"
+            self.save_settings()
         
         # Resolve system theme
         if self.current_theme == "system":
@@ -147,14 +151,27 @@ class PastyApp:
         except Exception as e:
             print(f"Failed to save settings: {e}")
 
+    def load_background(self):
+        """Load background image if available"""
+        bg_path = Path("assets/background.png")
+        if bg_path.exists():
+            try:
+                self.bg_image = Image.open(bg_path)
+                # Resize to fit window
+                self.bg_image = self.bg_image.resize((600, 550), Image.Resampling.LANCZOS)
+                self.bg_photo = ImageTk.PhotoImage(self.bg_image)
+            except Exception as e:
+                print(f"Failed to load background: {e}")
+                self.bg_image = None
+
     def setup_ui(self):
         """Setup UI elements"""
         # Fonts
         try:
-            self.title_font = font.Font(family="Inter", size=24, weight="bold")
-            self.label_font = font.Font(family="Inter", size=10)
-            self.path_font = font.Font(family="Roboto Mono", size=9)
-            self.btn_font = font.Font(family="Inter", size=12, weight="bold")
+            self.title_font = font.Font(family="Segoe UI", size=24, weight="bold")
+            self.label_font = font.Font(family="Segoe UI", size=10)
+            self.path_font = font.Font(family="Consolas", size=9)
+            self.btn_font = font.Font(family="Segoe UI", size=12, weight="bold")
             self.icon_font = font.Font(family="Sans", size=14)
         except:
             self.title_font = font.Font(family="sans-serif", size=24, weight="bold")
@@ -165,104 +182,119 @@ class PastyApp:
 
         self.root.geometry("600x550")
         
+        # Main canvas for background
+        self.canvas = tk.Canvas(self.root, width=600, height=550, highlightthickness=0)
+        self.canvas.pack(fill=tk.BOTH, expand=True)
+        
+        # Background image
+        if self.bg_photo:
+            self.canvas.create_image(0, 0, image=self.bg_photo, anchor="nw")
+        
+        # Main frame on canvas
+        main_frame = tk.Frame(self.canvas, bd=0)
+        self.canvas.create_window(300, 275, window=main_frame)
+        
         # Header with controls
-        header = tk.Frame(self.root, pady=20)
+        header = tk.Frame(main_frame, pady=20, bd=0)
         header.pack(fill=tk.X)
         
         # Theme and Language buttons
-        controls_frame = tk.Frame(header)
+        controls_frame = tk.Frame(header, bd=0)
         controls_frame.pack(side=tk.RIGHT, padx=20)
         
-        self.theme_btn = tk.Button(controls_frame, text="◐", font=self.icon_font, bd=0, padx=8, pady=4, command=self.toggle_theme, cursor="hand2")
+        self.theme_btn = tk.Button(controls_frame, text="◐", font=self.icon_font, bd=0, padx=8, pady=4, command=self.toggle_theme, cursor="hand2", relief=tk.FLAT)
         self.theme_btn.pack(side=tk.LEFT, padx=2)
         
-        self.lang_btn = tk.Button(controls_frame, text="한/en", font=self.label_font, bd=0, padx=8, pady=4, command=self.toggle_language, cursor="hand2")
+        self.lang_btn = tk.Button(controls_frame, text="한/en", font=self.label_font, bd=0, padx=8, pady=4, command=self.toggle_language, cursor="hand2", relief=tk.FLAT)
         self.lang_btn.pack(side=tk.LEFT, padx=2)
         
         # Title
-        self.title_label = tk.Label(header, font=self.title_font)
+        self.title_label = tk.Label(header, font=self.title_font, bd=0)
         self.title_label.pack()
         
-        self.subtitle_label = tk.Label(header, font=self.label_font)
+        self.subtitle_label = tk.Label(header, font=self.label_font, bd=0)
         self.subtitle_label.pack()
 
         # Main Container
-        container = tk.Frame(self.root, padx=40)
+        container = tk.Frame(main_frame, padx=40, bd=0)
         container.pack(fill=tk.BOTH, expand=True)
 
         # Source Selection
-        source_frame = tk.Frame(container, pady=10)
+        source_frame = tk.Frame(container, pady=10, bd=0)
         source_frame.pack(fill=tk.X)
         
-        self.source_label_widget = tk.Label(source_frame, font=self.label_font)
+        self.source_label_widget = tk.Label(source_frame, font=self.label_font, bd=0)
         self.source_label_widget.pack(anchor="w")
         
-        self.source_entry_frame = tk.Frame(source_frame, padx=10, pady=5)
+        self.source_entry_frame = tk.Frame(source_frame, padx=10, pady=5, bd=0, relief=tk.FLAT)
         self.source_entry_frame.pack(fill=tk.X, pady=5)
         
-        self.source_path_label = tk.Label(self.source_entry_frame, textvariable=self.source_path, font=self.path_font, anchor="w")
+        self.source_path_label = tk.Label(self.source_entry_frame, textvariable=self.source_path, font=self.path_font, anchor="w", bd=0)
         self.source_path_label.pack(side=tk.LEFT, fill=tk.X, expand=True)
         
-        self.source_browse_btn = tk.Button(self.source_entry_frame, font=self.label_font, bd=0, padx=10, command=self.browse_source, cursor="hand2")
+        self.source_browse_btn = tk.Button(self.source_entry_frame, font=self.label_font, bd=0, padx=10, pady=2, command=self.browse_source, cursor="hand2", relief=tk.FLAT)
         self.source_browse_btn.pack(side=tk.RIGHT)
 
         # Target Selection
-        target_frame = tk.Frame(container, pady=10)
+        target_frame = tk.Frame(container, pady=10, bd=0)
         target_frame.pack(fill=tk.X)
         
-        self.target_label_widget = tk.Label(target_frame, font=self.label_font)
+        self.target_label_widget = tk.Label(target_frame, font=self.label_font, bd=0)
         self.target_label_widget.pack(anchor="w")
         
-        self.target_entry_frame = tk.Frame(target_frame, padx=10, pady=5)
+        self.target_entry_frame = tk.Frame(target_frame, padx=10, pady=5, bd=0, relief=tk.FLAT)
         self.target_entry_frame.pack(fill=tk.X, pady=5)
         
-        self.target_path_label = tk.Label(self.target_entry_frame, textvariable=self.target_path, font=self.path_font, anchor="w")
+        self.target_path_label = tk.Label(self.target_entry_frame, textvariable=self.target_path, font=self.path_font, anchor="w", bd=0)
         self.target_path_label.pack(side=tk.LEFT, fill=tk.X, expand=True)
         
-        self.target_browse_btn = tk.Button(self.target_entry_frame, font=self.label_font, bd=0, padx=10, command=self.browse_target, cursor="hand2")
+        self.target_browse_btn = tk.Button(self.target_entry_frame, font=self.label_font, bd=0, padx=10, pady=2, command=self.browse_target, cursor="hand2", relief=tk.FLAT)
         self.target_browse_btn.pack(side=tk.RIGHT)
 
         # REC Indicator
-        self.rec_label = tk.Label(container, font=self.btn_font, pady=10)
+        self.rec_label = tk.Label(container, font=self.btn_font, pady=10, bd=0)
         self.rec_label.pack()
 
         # Start Button
-        self.start_btn = tk.Button(container, font=self.btn_font, bd=0, pady=15, state=tk.DISABLED, cursor="hand2")
+        self.start_btn = tk.Button(container, font=self.btn_font, bd=0, pady=15, state=tk.DISABLED, cursor="hand2", relief=tk.FLAT)
         self.start_btn.pack(fill=tk.X, pady=20)
         
         self.start_btn.bind("<ButtonPress-1>", self.on_press_start)
         self.start_btn.bind("<ButtonRelease-1>", self.on_release_start)
         
         # Copyright
-        self.copyright_label = tk.Label(self.root, font=("Inter", 8), pady=10)
+        self.copyright_label = tk.Label(main_frame, font=("Segoe UI", 8), pady=10, bd=0)
         self.copyright_label.pack(side=tk.BOTTOM)
+        
+        # Set icon if available
+        icon_path = Path("assets/icon.ico")
+        if icon_path.exists():
+            try:
+                self.root.iconbitmap(str(icon_path))
+            except:
+                pass
 
     def apply_theme(self):
         """Apply current theme colors"""
         theme = THEMES[self.resolved_theme]
         
+        # Canvas background
+        self.canvas.configure(bg=theme["bg"])
+        
         # Root and frames
         self.root.configure(bg=theme["bg"])
-        for widget in self.root.winfo_children():
-            if isinstance(widget, tk.Frame):
-                widget.configure(bg=theme["bg"])
-                for child in widget.winfo_children():
-                    if isinstance(child, tk.Frame):
-                        child.configure(bg=theme["bg"])
         
-        # Header elements
-        self.title_label.configure(fg=theme["accent"], bg=theme["bg"])
-        self.subtitle_label.configure(fg=theme["text_secondary"], bg=theme["bg"])
-        
-        # Control buttons
+        # Control buttons with slight transparency effect
         self.theme_btn.configure(bg=theme["card"], fg=theme["text_primary"], activebackground=theme["accent"])
         self.lang_btn.configure(bg=theme["card"], fg=theme["text_primary"], activebackground=theme["accent"])
         
         # Labels
-        self.source_label_widget.configure(fg=theme["text_primary"], bg=theme["bg"])
-        self.target_label_widget.configure(fg=theme["text_primary"], bg=theme["bg"])
+        self.title_label.configure(fg=theme["accent"], bg="")
+        self.subtitle_label.configure(fg=theme["text_secondary"], bg="")
+        self.source_label_widget.configure(fg=theme["text_primary"], bg="")
+        self.target_label_widget.configure(fg=theme["text_primary"], bg="")
         
-        # Entry frames and labels
+        # Entry frames with card style
         self.source_entry_frame.configure(bg=theme["card"])
         self.source_path_label.configure(fg=theme["text_secondary"], bg=theme["card"])
         self.source_browse_btn.configure(bg=theme["accent"], fg=theme["bg"], activebackground=theme["accent"])
@@ -273,9 +305,9 @@ class PastyApp:
         
         # REC label
         if self.is_recording:
-            self.rec_label.configure(fg=theme["rec"], bg=theme["bg"])
+            self.rec_label.configure(fg=theme["rec"], bg="")
         else:
-            self.rec_label.configure(fg=theme["bg"], bg=theme["bg"])
+            self.rec_label.configure(fg=theme["bg"], bg="")
         
         # Start button
         if self.start_btn['state'] == tk.NORMAL:
@@ -284,7 +316,7 @@ class PastyApp:
             self.start_btn.configure(bg=theme["card"], fg=theme["text_secondary"])
         
         # Copyright
-        self.copyright_label.configure(bg=theme["bg"], fg=theme["text_secondary"])
+        self.copyright_label.configure(bg="", fg=theme["text_secondary"])
 
     def apply_language(self):
         """Apply current language strings"""
@@ -332,6 +364,7 @@ class PastyApp:
             try:
                 with open(file_path, 'r', encoding='utf-8') as f:
                     self.source_content = f.read()
+                self.content_index = 0
                 self.check_ready()
             except Exception as e:
                 messagebox.showerror(s['error'], f"{s['failed_read']}: {e}")
