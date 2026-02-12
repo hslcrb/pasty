@@ -14,8 +14,8 @@ import threading
 from pathlib import Path
 from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, 
                                 QHBoxLayout, QLabel, QPushButton, QFileDialog, QFrame)
-from PySide6.QtCore import Qt, QTimer
-from PySide6.QtGui import QIcon, QPalette, QColor, QLinearGradient
+from PySide6.QtCore import Qt
+from PySide6.QtGui import QIcon, QPixmap, QPalette, QBrush
 from pynput import keyboard
 
 try:
@@ -25,7 +25,7 @@ except ImportError:
 
 # Constants
 APP_NAME = "Pasty"
-VERSION = "v0.4.0"
+VERSION = "v0.5.0"
 
 # Language Strings
 STRINGS = {
@@ -79,7 +79,6 @@ class PastyApp(QMainWindow):
         self.listener = None
         
         self.setup_ui()
-        self.apply_styles()
         self.update_language()
         self.start_keyboard_listener()
 
@@ -121,7 +120,7 @@ class PastyApp(QMainWindow):
             print(f"Failed to save settings: {e}")
 
     def setup_ui(self):
-        """Setup UI elements"""
+        """Setup UI with background image"""
         self.setWindowTitle(f"{STRINGS[self.current_language]['title']} {VERSION}")
         self.setFixedSize(600, 550)
         
@@ -130,8 +129,21 @@ class PastyApp(QMainWindow):
         if icon_path.exists():
             self.setWindowIcon(QIcon(str(icon_path)))
         
+        # Set window background using palette
+        bg_path = Path("assets/background.png")
+        if bg_path.exists() and self.resolved_theme == "light":
+            pixmap = QPixmap(str(bg_path))
+            scaled_pixmap = pixmap.scaled(600, 550, Qt.KeepAspectRatioByExpanding, Qt.SmoothTransformation)
+            palette = QPalette()
+            palette.setBrush(QPalette.Window, QBrush(scaled_pixmap))
+            self.setPalette(palette)
+        else:
+            # Dark mode solid color
+            self.setStyleSheet("QMainWindow { background-color: #0A1628; }")
+        
         # Central widget
         central_widget = QWidget()
+        central_widget.setStyleSheet("background: transparent;")
         self.setCentralWidget(central_widget)
         
         # Main layout
@@ -139,19 +151,55 @@ class PastyApp(QMainWindow):
         main_layout.setContentsMargins(40, 20, 40, 20)
         main_layout.setSpacing(15)
         
-        # Header with controls
+        # Colors based on theme
+        if self.resolved_theme == "dark":
+            text_color = "#E8F4F8"
+            secondary_color = "#8FB3D5"
+            accent_color = "#4A90E2"
+            card_color = "#1C2E4A"
+            rec_color = "#E24A4A"
+        else:
+            text_color = "#1A3A52"
+            secondary_color = "#5A7A8C"
+            accent_color = "#2E7FC4"
+            card_color = "#FFFFFF"
+            rec_color = "#D32F2F"
+        
+        # Header controls
         header_layout = QHBoxLayout()
         header_layout.addStretch()
         
         self.theme_btn = QPushButton("◐")
-        self.theme_btn.setObjectName("ctrlBtn")
         self.theme_btn.setFixedSize(40, 30)
+        self.theme_btn.setStyleSheet(f"""
+            QPushButton {{
+                background: {card_color};
+                color: {text_color};
+                border: none;
+                border-radius: 4px;
+                font-size: 12px;
+            }}
+            QPushButton:hover {{
+                background: {accent_color};
+            }}
+        """)
         self.theme_btn.clicked.connect(self.toggle_theme)
         header_layout.addWidget(self.theme_btn)
         
         self.lang_btn = QPushButton("한/en")
-        self.lang_btn.setObjectName("ctrlBtn")
         self.lang_btn.setFixedSize(60, 30)
+        self.lang_btn.setStyleSheet(f"""
+            QPushButton {{
+                background: {card_color};
+                color: {text_color};
+                border: none;
+                border-radius: 4px;
+                font-size: 10px;
+            }}
+            QPushButton:hover {{
+                background: {accent_color};
+            }}
+        """)
         self.lang_btn.clicked.connect(self.toggle_language)
         header_layout.addWidget(self.lang_btn)
         
@@ -159,29 +207,49 @@ class PastyApp(QMainWindow):
         
         # Title
         self.title_label = QLabel()
-        self.title_label.setObjectName("titleLabel")
         self.title_label.setAlignment(Qt.AlignCenter)
+        self.title_label.setStyleSheet(f"font-size: 28px; font-weight: bold; color: {accent_color};")
         main_layout.addWidget(self.title_label)
         
         self.subtitle_label = QLabel()
-        self.subtitle_label.setObjectName("subtitleLabel")
         self.subtitle_label.setAlignment(Qt.AlignCenter)
+        self.subtitle_label.setStyleSheet(f"font-size: 11px; color: {secondary_color};")
         main_layout.addWidget(self.subtitle_label)
         
         main_layout.addSpacing(20)
         
         # Source file
         self.source_label = QLabel()
-        self.source_label.setObjectName("fieldLabel")
+        self.source_label.setStyleSheet(f"font-size: 10px; color: {text_color};")
         main_layout.addWidget(self.source_label)
         
         source_layout = QHBoxLayout()
         self.source_path_label = QLabel("")
-        self.source_path_label.setObjectName("pathLabel")
+        self.source_path_label.setStyleSheet(f"""
+            background: {card_color};
+            color: {secondary_color};
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-family: 'Consolas', monospace;
+            font-size: 9px;
+        """)
         source_layout.addWidget(self.source_path_label, 1)
         
         self.source_browse_btn = QPushButton()
-        self.source_browse_btn.setObjectName("browseBtn")
+        self.source_browse_btn.setStyleSheet(f"""
+            QPushButton {{
+                background: {accent_color};
+                color: white;
+                border: none;
+                border-radius: 4px;
+                padding: 8px 16px;
+                font-size: 10px;
+                font-weight: bold;
+            }}
+            QPushButton:hover {{
+                opacity: 0.8;
+            }}
+        """)
         self.source_browse_btn.clicked.connect(self.browse_source)
         source_layout.addWidget(self.source_browse_btn)
         
@@ -189,16 +257,36 @@ class PastyApp(QMainWindow):
         
         # Target file
         self.target_label = QLabel()
-        self.target_label.setObjectName("fieldLabel")
+        self.target_label.setStyleSheet(f"font-size: 10px; color: {text_color};")
         main_layout.addWidget(self.target_label)
         
         target_layout = QHBoxLayout()
         self.target_path_label = QLabel("")
-        self.target_path_label.setObjectName("pathLabel")
+        self.target_path_label.setStyleSheet(f"""
+            background: {card_color};
+            color: {secondary_color};
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-family: 'Consolas', monospace;
+            font-size: 9px;
+        """)
         target_layout.addWidget(self.target_path_label, 1)
         
         self.target_browse_btn = QPushButton()
-        self.target_browse_btn.setObjectName("browseBtn")
+        self.target_browse_btn.setStyleSheet(f"""
+            QPushButton {{
+                background: {accent_color};
+                color: white;
+                border: none;
+                border-radius: 4px;
+                padding: 8px 16px;
+                font-size: 10px;
+                font-weight: bold;
+            }}
+            QPushButton:hover {{
+                opacity: 0.8;
+            }}
+        """)
         self.target_browse_btn.clicked.connect(self.browse_target)
         target_layout.addWidget(self.target_browse_btn)
         
@@ -208,150 +296,54 @@ class PastyApp(QMainWindow):
         
         # REC indicator
         self.rec_label = QLabel()
-        self.rec_label.setObjectName("recLabel")
         self.rec_label.setAlignment(Qt.AlignCenter)
+        self.rec_label.setStyleSheet(f"font-size: 14px; font-weight: bold; color: transparent;")
         main_layout.addWidget(self.rec_label)
         
         # Start button
         self.start_btn = QPushButton()
-        self.start_btn.setObjectName("startBtn")
         self.start_btn.setFixedHeight(50)
         self.start_btn.setEnabled(False)
+        self.start_btn_style_normal = f"""
+            QPushButton {{
+                background: {accent_color};
+                color: white;
+                border: none;
+                border-radius: 6px;
+                font-size: 13px;
+                font-weight: bold;
+            }}
+            QPushButton:hover {{
+                background: {rec_color};
+            }}
+        """
+        self.start_btn_style_disabled = f"""
+            QPushButton {{
+                background: {card_color};
+                color: {secondary_color};
+                border: none;
+                border-radius: 6px;
+                font-size: 13px;
+                font-weight: bold;
+            }}
+        """
+        self.start_btn.setStyleSheet(self.start_btn_style_disabled)
         self.start_btn.pressed.connect(self.on_press_start)
         self.start_btn.released.connect(self.on_release_start)
         main_layout.addWidget(self.start_btn)
+        
+        self.rec_color_style = rec_color
         
         main_layout.addStretch()
         
         # Copyright
         self.copyright_label = QLabel()
-        self.copyright_label.setObjectName("copyrightLabel")
         self.copyright_label.setAlignment(Qt.AlignCenter)
+        self.copyright_label.setStyleSheet(f"font-size: 8px; color: {secondary_color};")
         main_layout.addWidget(self.copyright_label)
 
-    def apply_styles(self):
-        """Apply QSS stylesheet with Frutiger Aero theme"""
-        if self.resolved_theme == "dark":
-            bg_color = "#0A1628"
-            text_primary = "#E8F4F8"
-            text_secondary = "#8FB3D5"
-            accent = "#4A90E2"
-            card = "#1C2E4A"
-            rec_color = "#E24A4A"
-            bg_image = ""
-        else:
-            bg_color = "#87CEEB"
-            text_primary = "#1A3A52"
-            text_secondary = "#5A7A8C"
-            accent = "#2E7FC4"
-            card = "#FFFFFF"
-            rec_color = "#D32F2F"
-            # Use background image for light mode
-            bg_path = Path("assets/background.png")
-            if bg_path.exists():
-                bg_image = f"background-image: url({bg_path.absolute()});"
-            else:
-                bg_image = ""
-        
-        stylesheet = f"""
-        QMainWindow {{
-            background-color: {bg_color};
-            {bg_image}
-        }}
-        
-        QWidget {{
-            background: transparent;
-            color: {text_primary};
-            font-family: 'Segoe UI', sans-serif;
-        }}
-        
-        #titleLabel {{
-            font-size: 28px;
-            font-weight: bold;
-            color: {accent};
-        }}
-        
-        #subtitleLabel {{
-            font-size: 11px;
-            color: {text_secondary};
-        }}
-        
-        #fieldLabel {{
-            font-size: 10px;
-            color: {text_primary};
-            margin-top: 10px;
-        }}
-        
-        #pathLabel {{
-            background: {card};
-            color: {text_secondary};
-            padding: 8px 12px;
-            border-radius: 4px;
-            font-family: 'Consolas', monospace;
-            font-size: 9px;
-        }}
-        
-        #ctrlBtn {{
-            background: {card};
-            color: {text_primary};
-            border: none;
-            border-radius: 4px;
-            font-size: 12px;
-        }}
-        
-        #ctrlBtn:hover {{
-            background: {accent};
-        }}
-        
-        #browseBtn {{
-            background: {accent};
-            color: white;
-            border: none;
-            border-radius: 4px;
-            padding: 8px 16px;
-            font-size: 10px;
-            font-weight: bold;
-        }}
-        
-        #browseBtn:hover {{
-            background: {accent};
-            opacity: 0.8;
-        }}
-        
-        #recLabel {{
-            font-size: 14px;
-            font-weight: bold;
-            color: {'transparent' if not self.is_recording else rec_color};
-        }}
-        
-        #startBtn {{
-            background: {accent if self.start_btn.isEnabled() else card};
-            color: {'white' if self.start_btn.isEnabled() else text_secondary};
-            border: none;
-            border-radius: 6px;
-            font-size: 13px;
-            font-weight: bold;
-        }}
-        
-        #startBtn:hover {{
-            background: {rec_color if self.start_btn.isEnabled() else card};
-        }}
-        
-        #startBtn:disabled {{
-            background: {card};
-            color: {text_secondary};
-        }}
-        
-        #copyrightLabel {{
-            font-size: 8px;
-            color: {text_secondary};
-        }}
-        """
-        
-        self.setStyleSheet(stylesheet)
-
     def update_language(self):
-        """Update all text with current language"""
+        """Update all text"""
         s = STRINGS[self.current_language]
         
         self.setWindowTitle(f"{s['title']} {VERSION}")
@@ -370,7 +362,7 @@ class PastyApp(QMainWindow):
             self.start_btn.setText(s['ready'])
 
     def toggle_theme(self):
-        """Toggle theme"""
+        """Toggle theme and restart"""
         if self.current_theme == "system":
             self.current_theme = "dark" if self.resolved_theme == "light" else "light"
         elif self.current_theme == "dark":
@@ -379,8 +371,11 @@ class PastyApp(QMainWindow):
             self.current_theme = "dark"
         
         self.resolved_theme = self.current_theme
-        self.apply_styles()
         self.save_settings()
+        
+        # Restart app to apply theme
+        QApplication.quit()
+        os.execv(sys.executable, ['python3'] + sys.argv)
 
     def toggle_language(self):
         """Toggle language"""
@@ -415,23 +410,24 @@ class PastyApp(QMainWindow):
         if self.source_path and self.target_path:
             self.start_btn.setEnabled(True)
             self.start_btn.setText(s['hold_to_start'])
+            self.start_btn.setStyleSheet(self.start_btn_style_normal)
         else:
             self.start_btn.setEnabled(False)
             self.start_btn.setText(s['ready'])
-        self.apply_styles()
+            self.start_btn.setStyleSheet(self.start_btn_style_disabled)
 
     def on_press_start(self):
         if self.start_btn.isEnabled():
             s = STRINGS[self.current_language]
             self.is_recording = True
             self.start_btn.setText(s['pasting'])
-            self.apply_styles()
+            self.rec_label.setStyleSheet(f"font-size: 14px; font-weight: bold; color: {self.rec_color_style};")
 
     def on_release_start(self):
         s = STRINGS[self.current_language]
         self.is_recording = False
         self.start_btn.setText(s['hold_to_start'])
-        self.apply_styles()
+        self.rec_label.setStyleSheet("font-size: 14px; font-weight: bold; color: transparent;")
 
     def start_keyboard_listener(self):
         def on_press(key):
