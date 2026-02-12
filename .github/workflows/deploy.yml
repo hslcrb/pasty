@@ -26,9 +26,6 @@ jobs:
         python -m pip install --upgrade pip
         pip install PySide6 pynput Pillow darkdetect
         
-    - name: Generate assets
-      run: python create_assets.py
-        
     - name: Build with PyInstaller / PyInstaller 빌드
       run: |
         pip install pyinstaller
