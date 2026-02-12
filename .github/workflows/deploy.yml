@@ -32,7 +32,7 @@ jobs:
     - name: Build with PyInstaller / PyInstaller 빌드
       run: |
         pip install pyinstaller
-        pyinstaller --onedir --windowed --name pasty --icon=assets/icon.ico main.py
+        pyinstaller --onedir --windowed --name pasty main.py
         
     - name: Package buildArtifacts / 아티팩트 압축
       shell: bash

@@ -25,7 +25,7 @@ except ImportError:
 
 # Constants
 APP_NAME = "Pasty"
-VERSION = "v0.5.0"
+VERSION = "v0.6.0"
 
 # Language Strings
 STRINGS = {
