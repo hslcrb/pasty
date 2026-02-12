@@ -120,26 +120,20 @@ class PastyApp(QMainWindow):
             print(f"Failed to save settings: {e}")
 
     def setup_ui(self):
-        """Setup UI with background image"""
+        """Setup minimal flat UI"""
         self.setWindowTitle(f"{STRINGS[self.current_language]['title']} {VERSION}")
-        self.setFixedSize(600, 550)
+        self.setFixedSize(500, 450)
         
         # Set icon
         icon_path = Path("assets/icon.ico")
         if icon_path.exists():
             self.setWindowIcon(QIcon(str(icon_path)))
         
-        # Set window background using palette
-        bg_path = Path("assets/background.png")
-        if bg_path.exists() and self.resolved_theme == "light":
-            pixmap = QPixmap(str(bg_path))
-            scaled_pixmap = pixmap.scaled(600, 550, Qt.KeepAspectRatioByExpanding, Qt.SmoothTransformation)
-            palette = QPalette()
-            palette.setBrush(QPalette.Window, QBrush(scaled_pixmap))
-            self.setPalette(palette)
+        # Simple solid background
+        if self.resolved_theme == "dark":
+            self.setStyleSheet("QMainWindow { background-color: #1a1a1a; }")
         else:
-            # Dark mode solid color
-            self.setStyleSheet("QMainWindow { background-color: #0A1628; }")
+            self.setStyleSheet("QMainWindow { background-color: #f5f5f5; }")
         
         # Central widget
         central_widget = QWidget()
@@ -148,79 +142,37 @@ class PastyApp(QMainWindow):
         
         # Main layout
         main_layout = QVBoxLayout(central_widget)
-        main_layout.setContentsMargins(40, 20, 40, 20)
-        main_layout.setSpacing(15)
+        main_layout.setContentsMargins(30, 20, 30, 20)
+        main_layout.setSpacing(12)
         
-        # Colors based on theme
+        # Minimal colors
         if self.resolved_theme == "dark":
-            text_color = "#E8F4F8"
-            secondary_color = "#8FB3D5"
-            accent_color = "#4A90E2"
-            card_color = "#1C2E4A"
-            rec_color = "#E24A4A"
+            text_color = "#ffffff"
+            secondary_color = "#999999"
+            accent_color = "#2196F3"
+            card_color = "#2a2a2a"
+            rec_color = "#f44336"
         else:
-            text_color = "#1A3A52"
-            secondary_color = "#5A7A8C"
-            accent_color = "#2E7FC4"
-            card_color = "#FFFFFF"
-            rec_color = "#D32F2F"
+            text_color = "#333333"
+            secondary_color = "#666666"
+            accent_color = "#2196F3"
+            card_color = "#ffffff"
+            rec_color = "#f44336"
         
-        # Header controls
-        header_layout = QHBoxLayout()
-        header_layout.addStretch()
-        
-        self.theme_btn = QPushButton("◐")
-        self.theme_btn.setFixedSize(40, 30)
-        self.theme_btn.setStyleSheet(f"""
-            QPushButton {{
-                background: {card_color};
-                color: {text_color};
-                border: none;
-                border-radius: 4px;
-                font-size: 12px;
-            }}
-            QPushButton:hover {{
-                background: {accent_color};
-            }}
-        """)
-        self.theme_btn.clicked.connect(self.toggle_theme)
-        header_layout.addWidget(self.theme_btn)
-        
-        self.lang_btn = QPushButton("한/en")
-        self.lang_btn.setFixedSize(60, 30)
-        self.lang_btn.setStyleSheet(f"""
-            QPushButton {{
-                background: {card_color};
-                color: {text_color};
-                border: none;
-                border-radius: 4px;
-                font-size: 10px;
-            }}
-            QPushButton:hover {{
-                background: {accent_color};
-            }}
-        """)
-        self.lang_btn.clicked.connect(self.toggle_language)
-        header_layout.addWidget(self.lang_btn)
-        
-        main_layout.addLayout(header_layout)
-        
-        # Title
+        # Title (no header controls)
         self.title_label = QLabel()
         self.title_label.setAlignment(Qt.AlignCenter)
-        self.title_label.setStyleSheet(f"font-size: 28px; font-weight: bold; color: {accent_color};")
+        self.title_label.setStyleSheet(f"font-size: 24px; font-weight: 600; color: {text_color}; margin: 10px;")
         main_layout.addWidget(self.title_label)
         
         self.subtitle_label = QLabel()
         self.subtitle_label.setAlignment(Qt.AlignCenter)
-        self.subtitle_label.setStyleSheet(f"font-size: 11px; color: {secondary_color};")
+        self.subtitle_label.setStyleSheet(f"font-size: 12px; color: {secondary_color}; margin-bottom: 15px;")
         main_layout.addWidget(self.subtitle_label)
-        
-        main_layout.addSpacing(20)
         
         # Source file
         self.source_label = QLabel()
-        self.source_label.setStyleSheet(f"font-size: 10px; color: {text_color};")
+        self.source_label.setStyleSheet(f"font-size: 11px; color: {text_color}; margin-top: 5px;")
         main_layout.addWidget(self.source_label)
         
         source_layout = QHBoxLayout()
@@ -228,10 +180,10 @@ class PastyApp(QMainWindow):
         self.source_path_label.setStyleSheet(f"""
             background: {card_color};
             color: {secondary_color};
-            padding: 8px 12px;
-            border-radius: 4px;
-            font-family: 'Consolas', monospace;
-            font-size: 9px;
+            padding: 10px;
+            border: 1px solid {secondary_color};
+            border-radius: 3px;
+            font-size: 10px;
         """)
         source_layout.addWidget(self.source_path_label, 1)
         
@@ -241,10 +193,9 @@ class PastyApp(QMainWindow):
                 background: {accent_color};
                 color: white;
                 border: none;
-                border-radius: 4px;
-                padding: 8px 16px;
-                font-size: 10px;
-                font-weight: bold;
+                border-radius: 3px;
+                padding: 10px 20px;
+                font-size: 11px;
             }}
             QPushButton:hover {{
                 opacity: 0.8;
@@ -257,7 +208,7 @@ class PastyApp(QMainWindow):
         
         # Target file
         self.target_label = QLabel()
-        self.target_label.setStyleSheet(f"font-size: 10px; color: {text_color};")
+        self.target_label.setStyleSheet(f"font-size: 11px; color: {text_color}; margin-top: 10px;")
         main_layout.addWidget(self.target_label)
         
         target_layout = QHBoxLayout()
@@ -265,10 +216,10 @@ class PastyApp(QMainWindow):
         self.target_path_label.setStyleSheet(f"""
             background: {card_color};
             color: {secondary_color};
-            padding: 8px 12px;
-            border-radius: 4px;
-            font-family: 'Consolas', monospace;
-            font-size: 9px;
+            padding: 10px;
+            border: 1px solid {secondary_color};
+            border-radius: 3px;
+            font-size: 10px;
         """)
         target_layout.addWidget(self.target_path_label, 1)
         
@@ -278,10 +229,9 @@ class PastyApp(QMainWindow):
                 background: {accent_color};
                 color: white;
                 border: none;
-                border-radius: 4px;
-                padding: 8px 16px;
-                font-size: 10px;
-                font-weight: bold;
+                border-radius: 3px;
+                padding: 10px 20px;
+                font-size: 11px;
             }}
             QPushButton:hover {{
                 opacity: 0.8;
@@ -292,39 +242,35 @@ class PastyApp(QMainWindow):
         
         main_layout.addLayout(target_layout)
         
-        main_layout.addSpacing(10)
-        
         # REC indicator
         self.rec_label = QLabel()
         self.rec_label.setAlignment(Qt.AlignCenter)
-        self.rec_label.setStyleSheet(f"font-size: 14px; font-weight: bold; color: transparent;")
+        self.rec_label.setStyleSheet(f"font-size: 13px; font-weight: 600; color: transparent; margin: 10px;")
         main_layout.addWidget(self.rec_label)
         
         # Start button
         self.start_btn = QPushButton()
-        self.start_btn.setFixedHeight(50)
+        self.start_btn.setFixedHeight(45)
         self.start_btn.setEnabled(False)
         self.start_btn_style_normal = f"""
             QPushButton {{
                 background: {accent_color};
                 color: white;
                 border: none;
-                border-radius: 6px;
+                border-radius: 3px;
                 font-size: 13px;
-                font-weight: bold;
             }}
             QPushButton:hover {{
-                background: {rec_color};
+                opacity: 0.9;
             }}
         """
         self.start_btn_style_disabled = f"""
             QPushButton {{
                 background: {card_color};
                 color: {secondary_color};
-                border: none;
-                border-radius: 6px;
+                border: 1px solid {secondary_color};
+                border-radius: 3px;
                 font-size: 13px;
-                font-weight: bold;
             }}
         """
         self.start_btn.setStyleSheet(self.start_btn_style_disabled)
@@ -339,7 +285,7 @@ class PastyApp(QMainWindow):
         # Copyright
         self.copyright_label = QLabel()
         self.copyright_label.setAlignment(Qt.AlignCenter)
-        self.copyright_label.setStyleSheet(f"font-size: 8px; color: {secondary_color};")
+        self.copyright_label.setStyleSheet(f"font-size: 9px; color: {secondary_color}; margin-top: 10px;")
         main_layout.addWidget(self.copyright_label)
 
     def update_language(self):
