@@ -24,17 +24,17 @@ jobs:
     - name: Install dependencies / 의존성 설치
       run: |
         python -m pip install --upgrade pip
-        pip install pynput Pillow pyinstaller
+        pip install pynput Pillow pyinstaller darkdetect
         
     - name: Build with PyInstaller / PyInstaller 빌드
       run: |
-        pyinstaller --onedir --noconfirm --windowed main.py
+        pyinstaller --onedir --noconsole --name pasty main.py
         
     - name: Package Artifacts / 아티팩트 압축
       shell: bash
       run: |
         mkdir -p release-folder
-        cp -r dist/main/* release-folder/
+        cp -r dist/pasty/* release-folder/
         zip -r pasty-${{ matrix.os }}.zip release-folder
         
     - name: Create Release / 릴리즈 생성
