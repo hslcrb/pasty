@@ -81,10 +81,10 @@ class PastyApp:
         self.source_label.pack(side=tk.LEFT, fill=tk.X, expand=True)
         tk.Button(entry_frame, text="Browse / 찾아보기", font=self.label_font, bg=COLOR_ACCENT, fg=COLOR_BG, bd=0, padx=10, command=self.browse_source).pack(side=tk.RIGHT)
 
-        # Target Selection (Optional now, used for logging or context)
+        # Target Selection / 대상 텍스트 선택
         target_frame = tk.Frame(container, bg=COLOR_BG, pady=10)
         target_frame.pack(fill=tk.X)
-        tk.Label(target_frame, text="Target Reference (Optional) / 대상 참조 (선택 사항)", font=self.label_font, fg=COLOR_TEXT_PRIMARY, bg=COLOR_BG).pack(anchor="w")
+        tk.Label(target_frame, text="Target Text (Mandatory) / 대상 텍스트 (필수)", font=self.label_font, fg=COLOR_TEXT_PRIMARY, bg=COLOR_BG).pack(anchor="w")
         entry_frame_t = tk.Frame(target_frame, bg=COLOR_CARD, padx=10, pady=5)
         entry_frame_t.pack(fill=tk.X, pady=5)
         self.target_label = tk.Label(entry_frame_t, textvariable=self.target_path, font=self.path_font, fg=COLOR_TEXT_SECONDARY, bg=COLOR_CARD, anchor="w")
