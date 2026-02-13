@@ -172,31 +172,123 @@ class PastyApp(QMainWindow):
         
         source_layout = QHBoxLayout()
         self.source_path_label = QLabel("")
-        self.source_path_label.setStyleSheet(f"""
-            background: {card_color};
-            color: {secondary_color};
-            padding: 10px;
-            border: 1px solid {secondary_color};
-            border-radius: 3px;
-            font-size: 10px;
-        """)
+        # Frutiger Aero Style
+        if self.resolved_theme == "dark":
+            input_style = """
+                QLabel {
+                    background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #333333, stop:1 #2a2a2a);
+                    color: #e0e0e0;
+                    border: 1px solid #555;
+                    border-radius: 5px;
+                    padding: 8px;
+                    font-size: 11px;
+                }
+            """
+            btn_style = """
+                QPushButton {
+                    background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #4a90e2, stop:0.5 #357abd, stop:1 #2a68a8);
+                    color: white;
+                    border: 1px solid #1a4b78;
+                    border-radius: 5px;
+                    padding: 8px 16px;
+                    font-family: 'Segoe UI', sans-serif;
+                    font-size: 11px;
+                    font-weight: bold;
+                }
+                QPushButton:hover {
+                    background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #5ca0f2, stop:0.5 #4a90e2, stop:1 #357abd);
+                }
+                QPushButton:pressed {
+                    background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #2a68a8, stop:1 #357abd);
+                    padding-top: 9px;
+                    padding-left: 17px;
+                }
+            """
+            start_btn_style = """
+                QPushButton {
+                    background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #4a90e2, stop:0.5 #357abd, stop:1 #2a68a8);
+                    color: white;
+                    border: 1px solid #1a4b78;
+                    border-radius: 8px;
+                    font-size: 14px;
+                    font-weight: bold;
+                }
+                QPushButton:hover {
+                    background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #5ca0f2, stop:0.5 #4a90e2, stop:1 #357abd);
+                }
+                QPushButton:pressed {
+                    background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #2a68a8, stop:1 #357abd);
+                    padding-top: 2px;
+                    padding-left: 2px;
+                }
+                QPushButton:disabled {
+                    background: #2a2a2a;
+                    color: #555;
+                    border: 1px solid #444;
+                }
+            """
+        else:
+            input_style = """
+                QLabel {
+                    background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #ffffff, stop:1 #f0f0f0);
+                    color: #333333;
+                    border: 1px solid #ccc;
+                    border-bottom: 1px solid #bbb;
+                    border-radius: 5px;
+                    padding: 8px;
+                    font-size: 11px;
+                }
+            """
+            btn_style = """
+                QPushButton {
+                    background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #eefeff, stop:0.5 #d0f0ff, stop:1 #b0dfff);
+                    color: #004488;
+                    border: 1px solid #88ccee;
+                    border-radius: 5px;
+                    padding: 8px 16px;
+                    font-family: 'Segoe UI', sans-serif;
+                    font-size: 11px;
+                    font-weight: bold;
+                }
+                QPushButton:hover {
+                    background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #ffffff, stop:0.5 #e0f5ff, stop:1 #cceeff);
+                }
+                QPushButton:pressed {
+                    background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #b0dfff, stop:1 #d0f0ff);
+                    padding-top: 9px;
+                    padding-left: 17px;
+                }
+            """
+            start_btn_style = """
+                QPushButton {
+                    background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #8accff, stop:0.5 #59aaff, stop:1 #4090ee);
+                    color: white;
+                    border: 1px solid #3070cc;
+                    border-radius: 8px;
+                    font-size: 14px;
+                    font-weight: bold;
+                    text-shadow: 0px 1px 1px rgba(0,0,0,0.3);
+                }
+                QPushButton:hover {
+                    background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #a0d8ff, stop:0.5 #70b8ff, stop:1 #50a0ff);
+                }
+                QPushButton:pressed {
+                    background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #4090ee, stop:1 #59aaff);
+                    padding-top: 2px;
+                    padding-left: 2px;
+                }
+                QPushButton:disabled {
+                    background: #f0f0f0;
+                    color: #aaa;
+                    border: 1px solid #ccc;
+                }
+            """
+
+        self.source_path_label.setStyleSheet(input_style)
         source_layout.addWidget(self.source_path_label, 1)
         
-        self.source_browse_btn = QPushButton()
-        self.source_browse_btn.setStyleSheet(f"""
-            QPushButton {{
-                background: {accent_color};
-                color: white;
-                border: none;
-                border-radius: 3px;
-                padding: 10px 20px;
-                font-size: 11px;
-            }}
-            QPushButton:hover {{
-                opacity: 0.8;
-            }}
-        """)
-        self.source_browse_btn.clicked.connect(self.browse_source)
+        self.source_browse_btn.setStyleSheet(btn_style)
+        self.source_browse_btn.setCursor(Qt.PointingHandCursor)
         source_layout.addWidget(self.source_browse_btn)
         
         main_layout.addLayout(source_layout)
@@ -207,32 +299,13 @@ class PastyApp(QMainWindow):
         main_layout.addWidget(self.target_label)
         
         target_layout = QHBoxLayout()
-        self.target_path_label = QLabel("")
-        self.target_path_label.setStyleSheet(f"""
-            background: {card_color};
-            color: {secondary_color};
-            padding: 10px;
-            border: 1px solid {secondary_color};
-            border-radius: 3px;
-            font-size: 10px;
-        """)
+        self.target_path_label.setStyleSheet(input_style)
         target_layout.addWidget(self.target_path_label, 1)
         
-        self.target_browse_btn = QPushButton()
-        self.target_browse_btn.setStyleSheet(f"""
-            QPushButton {{
-                background: {accent_color};
-                color: white;
-                border: none;
-                border-radius: 3px;
-                padding: 10px 20px;
-                font-size: 11px;
-            }}
-            QPushButton:hover {{
-                opacity: 0.8;
-            }}
-        """)
+        self.target_browse_btn.setStyleSheet(btn_style)
+        self.target_browse_btn.setCursor(Qt.PointingHandCursor)
         self.target_browse_btn.clicked.connect(self.browse_target)
+        
         target_layout.addWidget(self.target_browse_btn)
         
         main_layout.addLayout(target_layout)
@@ -245,30 +318,13 @@ class PastyApp(QMainWindow):
         
         # Start button
         self.start_btn = QPushButton()
-        self.start_btn.setFixedHeight(45)
+        self.start_btn.setFixedHeight(50)
         self.start_btn.setEnabled(False)
-        self.start_btn_style_normal = f"""
-            QPushButton {{
-                background: {accent_color};
-                color: white;
-                border: none;
-                border-radius: 3px;
-                font-size: 13px;
-            }}
-            QPushButton:hover {{
-                opacity: 0.9;
-            }}
-        """
-        self.start_btn_style_disabled = f"""
-            QPushButton {{
-                background: {card_color};
-                color: {secondary_color};
-                border: 1px solid {secondary_color};
-                border-radius: 3px;
-                font-size: 13px;
-            }}
-        """
-        self.start_btn.setStyleSheet(self.start_btn_style_disabled)
+        self.start_btn.setCursor(Qt.PointingHandCursor)
+        
+        self.start_btn.setStyleSheet(start_btn_style)
+        self.start_btn_style_normal = start_btn_style  # Save for logic use
+        self.start_btn_style_disabled = start_btn_style.replace("QPushButton {", "QPushButton { /* disabled override */") # Hacky but handled by disabled state in CSS above
         self.start_btn.pressed.connect(self.on_press_start)
         self.start_btn.released.connect(self.on_release_start)
         main_layout.addWidget(self.start_btn)
