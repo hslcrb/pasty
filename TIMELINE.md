@@ -24,4 +24,9 @@
     - Extracted core logic to `src/engine.py`
     - Created `main_cli.py` using `rich` library
     - Verified with `test_doc.txt`
+- **15:00**: [Phase 10] Input Enhancement / 입력 방식 개선
+    - GUI: Replaced Label with `QLineEdit`
+    - CLI: Added path expansion (`~`)
+- **15:05**: [Release] v0.7.0 - GUI/CLI Hybrid
+
 

@@ -79,7 +79,8 @@ class PastyApp(QMainWindow):
 
     def setup_ui(self):
         """Setup minimal flat UI with Frutiger Aero buttons"""
-        self.setWindowTitle(f"{STRINGS[self.current_language]['title']} {VERSION}")
+        s = STRINGS[self.current_language]
+        self.setWindowTitle(f"{s['title']} {VERSION}")
         self.setFixedSize(500, 450)
         
         # Simple solid background

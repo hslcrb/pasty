@@ -4,7 +4,7 @@ Pasty (페이스티) - Configuration & Constants
 """
 
 APP_NAME = "Pasty"
-VERSION = "v0.6.0"
+VERSION = "v0.7.0"
 
 # Language Strings
 STRINGS = {

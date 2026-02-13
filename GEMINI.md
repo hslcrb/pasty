@@ -3,7 +3,7 @@
 ## Project Info / 프로젝트 정보
 - Name: Pasty (페이스티)
 - Type: Ghost-typing utility
-- Version: v0.6.0
+- Version: v0.7.0
 - Framework: PySide6
 - License: Apache 2.0
 
@@ -25,11 +25,16 @@
 - [x] Settings persistence
 - [x] Clean minimal UI
 - [x] CI/CD automation
+- [x] **CLI Version** (v0.7.0)
+- [x] **Manual Path Input** (v0.7.0)
 
 ## Development Commands / 개발 명령어
 ```bash
-# Run
+# Run GUI
 python3 main.py
+
+# Run CLI
+python3 main_cli.py
 
 # Test
 # (manual testing required)
