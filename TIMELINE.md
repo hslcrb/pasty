@@ -17,3 +17,6 @@
 - **00:11**: ✅ FINAL v0.6.0 - Clean minimal design complete / 최종 v0.6.0 - 깔끔한 미니멀 디자인 완성
 - **14:30**: User feedback: Frutiger Aero buttons / 사용자 피드백: 프루티거 에어로 버튼
 - **14:35**: ✅ Applied Frutiger Aero style buttons to minimal layout / 미니멀 레이아웃에 프루티거 에어로 스타일 버튼 적용
+- **14:39**: [Phase 8] Modularization to `src` / `src`로 모듈화
+    - Refactored `main.py` -> `src/config.py`, `src/app.py`
+    - `main.py` is now a clean entry point
