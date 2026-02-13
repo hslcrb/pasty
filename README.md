@@ -44,10 +44,41 @@ pyinstaller --onedir --windowed --name pasty main.py
 ```
 
 ## Usage / 사용법
-1. **Select Source File** / 원천 파일 선택: Browse or type the path to the text file / 텍스트 파일 경로를 찾거나 직접 입력
-2. **Select Target File** / 대상 파일 선택: Browse or type where to save / 저장할 경로를 찾거나 직접 입력
-3. **Hold Button** / 버튼 누르기: Press and hold the start button
-4. **Type Naturally** / 자연스럽게 타이핑: While holding, type on your keyboard - each keystroke will inject 1-5 random characters from the source
+
+### GUI Mode (Graphical Interface)
+Run `python3 main.py` to start the graphical interface.
+1. **Source File**: Click 'Browse' or type the path directly.
+   - **Path Expansion**: Supports `~` for home directory (e.g., `~/Documents/text.txt`).
+   - **Validation**: Automatically validates if the file exists when typing.
+2. **Target File**: Click 'Browse' or type the path where text will be typed.
+   - If the file doesn't exist, it will be created.
+3. **Start**: Hold the "HOLD TO START" button.
+4. **Ghost Typing**: content will be typed into the target file while you hold the button.
+
+### CLI Mode (Command Line)
+Run `python3 main_cli.py` for the terminal interface.
+- **Detailed Arguments**:
+  ```bash
+  python3 main_cli.py [source_path] [target_path] --lang [ko|en]
+  ```
+  - `source_path`: Path to the text file to read.
+  - `target_path`: Path to the file to append text to (Optional).
+  - `--lang`: Set interface language (`ko` for Korean, `en` for English).
+
+- **Interactive Mode**:
+  - If arguments are omitted, the CLI will prompt you interactively.
+  - Supports `rich` TUI for a beautiful experience.
+  - Supports Path Expansion (`~/`) and relative paths (`./`).
+
+- **Examples**:
+  ```bash
+  # Quick start w/ source
+  python3 main_cli.py ~/my_text.txt
+
+  # Full command
+  python3 main_cli.py data/source.txt output.txt --lang en
+  ```
+
 
 ## Technical Details / 기술 세부사항
 - **UI Framework**: PySide6 (Qt for Python)
