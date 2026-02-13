@@ -9,7 +9,7 @@ permissions:
 
 jobs:
   build:
-    name: Build & Release / 빌드 및 릴리즈
+    name: Build on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -34,31 +34,40 @@ jobs:
         pip install pyinstaller
         pyinstaller --onedir --windowed --name pasty main.py
         
-    - name: Package buildArtifacts / 아티팩트 압축
+    - name: Package / 패키징
       shell: bash
       run: |
-        mkdir -p release-folder
-        cp -r dist/pasty/* release-folder/
-        zip -r pasty-${{ matrix.os }}.zip release-folder
+        cd dist
+        if [ "${{ matrix.os }}" == "windows-latest" ]; then
+          7z a pasty-${{ matrix.os }}.zip pasty
+        else
+          zip -r pasty-${{ matrix.os }}.zip pasty
+        fi
         
-    - name: Create Release / 릴리즈 생성
-      if: matrix.os == 'ubuntu-latest'
-      id: create_release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - name: Upload Artifact / 아티팩트 업로드
+      uses: actions/upload-artifact@v4
       with:
-        tag_name: v${{ github.run_number }}
-        release_name: Release v${{ github.run_number }}
-        draft: false
-        prerelease: false
+        name: pasty-${{ matrix.os }}
+        path: dist/pasty-${{ matrix.os }}.zip
 
-    - name: Upload Release Asset / 릴리즈 아티팩트 업로드
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./pasty-${{ matrix.os }}.zip
-        asset_name: pasty-${{ matrix.os }}.zip
-        asset_content_type: application/zip
+  release:
+    name: Create Release
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download Artifacts / 아티팩트 다운로드
+        uses: actions/download-artifact@v4
+        with:
+          pattern: pasty-*
+          merge-multiple: true
+          
+      - name: Create Release / 릴리스 생성
+        uses: softprops/action-gh-release@v1
+        with:
+          files: pasty-*.zip
+          tag_name: v${{ github.run_number }}
+          name: Release v${{ github.run_number }}
+          draft: false
+          prerelease: false
