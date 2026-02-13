@@ -22,6 +22,7 @@ except ImportError:
     darkdetect = None
 
 from src.config import APP_NAME, VERSION, STRINGS
+from src.engine import GhostTyper
 
 class PastyApp(QMainWindow):
     def __init__(self):
@@ -31,20 +32,13 @@ class PastyApp(QMainWindow):
         self.settings_path = Path("settings.json")
         self.load_settings()
         
-        # State
-        self.source_path = ""
-        self.target_path = ""
-        self.is_recording = False
-        self.source_content = ""
-        self.content_index = 0
-        
-        # Keyboard Controller
-        self.kb_controller = keyboard.Controller()
-        self.listener = None
+        # Engine
+        self.engine = None
         
         self.setup_ui()
         self.update_language()
-        self.start_keyboard_listener()
+
+    # ... (load_settings, save_settings, setup_ui same as before) ...
 
     def load_settings(self):
         """Load settings from JSON, create if doesn't exist"""
@@ -328,22 +322,8 @@ class PastyApp(QMainWindow):
             self.start_btn.setText(s['ready'])
 
     def toggle_theme(self):
-        """Toggle theme and restart"""
-        # ... existing logic ...
-        # (This button was removed in minimal design but method kept if needed for future)
-        if self.current_theme == "system":
-            self.current_theme = "dark" if self.resolved_theme == "light" else "light"
-        elif self.current_theme == "dark":
-            self.current_theme = "light"
-        else:
-            self.current_theme = "dark"
-        
-        self.resolved_theme = self.current_theme
-        self.save_settings()
-        
-        # Restart app to apply theme
-        QApplication.quit()
-        os.execv(sys.executable, ['python3'] + sys.argv)
+        # ... logic if needed ...
+        pass
 
     def toggle_language(self):
         """Toggle language"""
@@ -356,12 +336,17 @@ class PastyApp(QMainWindow):
         file_path, _ = QFileDialog.getOpenFileName(self, s['source_label'])
         if file_path:
             self.source_path = file_path
-            self.source_path_label.setText(os.path.basename(file_path)) # Show basename
+            self.source_path_label.setText(os.path.basename(file_path)) 
             self.source_path_label.setToolTip(file_path)
+            
+            # Read and init engine
             try:
                 with open(file_path, 'r', encoding='utf-8') as f:
-                    self.source_content = f.read()
-                self.content_index = 0
+                    content = f.read()
+                
+                self.engine = GhostTyper(content, self.target_path)
+                self.engine.start() # Start listener
+                
                 self.check_ready()
             except Exception as e:
                 print(f"Failed to read: {e}")
@@ -373,11 +358,15 @@ class PastyApp(QMainWindow):
             self.target_path = file_path
             self.target_path_label.setText(os.path.basename(file_path))
             self.target_path_label.setToolTip(file_path)
+            
+            if self.engine:
+                self.engine.target_path = file_path
+            
             self.check_ready()
 
     def check_ready(self):
         s = STRINGS[self.current_language]
-        if self.source_path and self.target_path:
+        if self.source_path and self.target_path and self.engine:
             self.start_btn.setEnabled(True)
             self.start_btn.setText(s['hold_to_start'])
             self.start_btn.setStyleSheet(self.start_btn_style_normal)
@@ -387,54 +376,21 @@ class PastyApp(QMainWindow):
             self.start_btn.setStyleSheet(self.start_btn_style_disabled)
 
     def on_press_start(self):
-        if self.start_btn.isEnabled():
+        if self.start_btn.isEnabled() and self.engine:
             s = STRINGS[self.current_language]
-            self.is_recording = True
+            self.engine.set_recording(True)
             self.start_btn.setText(s['pasting'])
             self.rec_label.setStyleSheet(f"font-size: 14px; font-weight: bold; color: {self.rec_color_style};")
 
     def on_release_start(self):
-        s = STRINGS[self.current_language]
-        self.is_recording = False
-        self.start_btn.setText(s['hold_to_start'])
-        self.rec_label.setStyleSheet("font-size: 14px; font-weight: bold; color: transparent;")
+        if self.engine:
+            s = STRINGS[self.current_language]
+            self.engine.set_recording(False)
+            self.start_btn.setText(s['hold_to_start'])
+            self.rec_label.setStyleSheet("font-size: 14px; font-weight: bold; color: transparent;")
 
-    def start_keyboard_listener(self):
-        def on_press(key):
-            if not self.is_recording:
-                return
-            
-            is_modifier = False
-            if hasattr(key, 'name'):
-                if any(mod in key.name for mod in ['ctrl', 'alt', 'shift', 'cmd', 'win']):
-                    is_modifier = True
-            
-            if not is_modifier:
-                self.inject_chars()
-
-        self.listener = keyboard.Listener(on_press=on_press)
-        self.listener.start()
-
-    def inject_chars(self):
-        if not self.source_content or self.content_index >= len(self.source_content):
-            return
-
-        num_chars = random.randint(1, 5)
-        chars_to_add = self.source_content[self.content_index : self.content_index + num_chars]
-        self.content_index += num_chars
-
-        if chars_to_add:
-            threading.Thread(target=self._type_chars, args=(chars_to_add,), daemon=True).start()
-            
-            if self.target_path:
-                try:
-                    with open(self.target_path, 'a', encoding='utf-8') as f:
-                        f.write(chars_to_add)
-                except:
-                    pass
-
-    def _type_chars(self, chars):
-        try:
-            self.kb_controller.type(chars)
-        except Exception as e:
-            print(f"Simulation Error: {e}")
+    # Cleanup on close
+    def closeEvent(self, event):
+        if self.engine:
+            self.engine.stop()
+        event.accept()

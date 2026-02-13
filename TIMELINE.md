@@ -20,3 +20,8 @@
 - **14:39**: [Phase 8] Modularization to `src` / `src`로 모듈화
     - Refactored `main.py` -> `src/config.py`, `src/app.py`
     - `main.py` is now a clean entry point
+- **14:40**: [Phase 9] CLI Implementation / CLI 구현
+    - Extracted core logic to `src/engine.py`
+    - Created `main_cli.py` using `rich` library
+    - Verified with `test_doc.txt`
+

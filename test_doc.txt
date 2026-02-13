@@ -1,0 +1,3 @@
+This is a test document for Pasty CLI verification.
+It should be typed out perfectly by the ghost typer.
+Hello World! 1234567890
