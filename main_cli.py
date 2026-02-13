@@ -4,6 +4,7 @@ Pasty (페이스티) - CLI Version
 """
 
 import sys
+import os
 import time
 import argparse
 from pathlib import Path
@@ -47,6 +48,9 @@ def main():
     if not source_path:
         source_path = Prompt.ask(f"[bold green]{s['source_label']}[/bold green]")
     
+    # Expand and resolve path
+    source_path = os.path.abspath(os.path.expanduser(source_path))
+
     if not Path(source_path).exists():
         console.print(f"[bold red]{s['error']}: {s['failed_read']} ({source_path})[/bold red]")
         sys.exit(1)
@@ -63,8 +67,10 @@ def main():
     if not target_path:
         target_path = Prompt.ask(f"[bold green]{s['target_label']}[/bold green] (Enter to skip)")
     
-    if target_path and not Path(target_path).exists():
-        Path(target_path).touch()
+    if target_path:
+        target_path = os.path.abspath(os.path.expanduser(target_path))
+        if not Path(target_path).exists():
+            Path(target_path).touch()
 
     # 3. Armed & Ready
     engine = GhostTyper(content, target_path)

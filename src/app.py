@@ -11,7 +11,7 @@ import threading
 from pathlib import Path
 
 from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, 
-                                QHBoxLayout, QLabel, QPushButton, QFileDialog, QFrame)
+                                QHBoxLayout, QLabel, QPushButton, QFileDialog, QFrame, QLineEdit)
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QIcon, QPalette, QBrush
 from pynput import keyboard
@@ -129,12 +129,13 @@ class PastyApp(QMainWindow):
         main_layout.addWidget(self.source_label)
         
         source_layout = QHBoxLayout()
-        self.source_path_label = QLabel("")
+        self.source_path_input = QLineEdit()
+        self.source_path_input.setPlaceholderText(s['source_label'])
         
         # Frutiger Aero Style
         if self.resolved_theme == "dark":
             input_style = """
-                QLabel {
+                QLineEdit {
                     background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #333333, stop:1 #2a2a2a);
                     color: #e0e0e0;
                     border: 1px solid #555;
@@ -188,7 +189,7 @@ class PastyApp(QMainWindow):
             """
         else:
             input_style = """
-                QLabel {
+                QLineEdit {
                     background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #ffffff, stop:1 #f0f0f0);
                     color: #333333;
                     border: 1px solid #ccc;
@@ -243,8 +244,9 @@ class PastyApp(QMainWindow):
                 }
             """
 
-        self.source_path_label.setStyleSheet(input_style)
-        source_layout.addWidget(self.source_path_label, 1)
+        self.source_path_input.setStyleSheet(input_style)
+        self.source_path_input.textChanged.connect(self.on_source_text_changed)
+        source_layout.addWidget(self.source_path_input, 1)
         
         self.source_browse_btn = QPushButton()
         self.source_browse_btn.setStyleSheet(btn_style)
@@ -260,9 +262,10 @@ class PastyApp(QMainWindow):
         main_layout.addWidget(self.target_label)
         
         target_layout = QHBoxLayout()
-        self.target_path_label = QLabel("")
-        self.target_path_label.setStyleSheet(input_style)
-        target_layout.addWidget(self.target_path_label, 1)
+        self.target_path_input = QLineEdit()
+        self.target_path_input.setStyleSheet(input_style)
+        self.target_path_input.textChanged.connect(self.on_target_text_changed)
+        target_layout.addWidget(self.target_path_input, 1)
         
         self.target_browse_btn = QPushButton()
         self.target_browse_btn.setStyleSheet(btn_style)
@@ -335,38 +338,41 @@ class PastyApp(QMainWindow):
         s = STRINGS[self.current_language]
         file_path, _ = QFileDialog.getOpenFileName(self, s['source_label'])
         if file_path:
-            self.source_path = file_path
-            self.source_path_label.setText(os.path.basename(file_path)) 
-            self.source_path_label.setToolTip(file_path)
-            
-            # Read and init engine
-            try:
-                with open(file_path, 'r', encoding='utf-8') as f:
-                    content = f.read()
-                
-                self.engine = GhostTyper(content, self.target_path)
-                self.engine.start() # Start listener
-                
-                self.check_ready()
-            except Exception as e:
-                print(f"Failed to read: {e}")
+            self.source_path_input.setText(file_path) # Updates logic via check_ready trigger
 
     def browse_target(self):
         s = STRINGS[self.current_language]
         file_path, _ = QFileDialog.getOpenFileName(self, s['target_label'])
         if file_path:
-            self.target_path = file_path
-            self.target_path_label.setText(os.path.basename(file_path))
-            self.target_path_label.setToolTip(file_path)
-            
-            if self.engine:
-                self.engine.target_path = file_path
-            
-            self.check_ready()
+            self.target_path_input.setText(file_path)
+
+    def on_source_text_changed(self, text):
+        self.source_path = text
+        if os.path.exists(text) and os.path.isfile(text):
+            try:
+                with open(text, 'r', encoding='utf-8') as f:
+                    content = f.read()
+                
+                # Re-init engine with new content
+                self.engine = GhostTyper(content, self.target_path)
+                self.engine.start()
+                self.check_ready()
+            except:
+                pass
+        self.check_ready()
+
+    def on_target_text_changed(self, text):
+        self.target_path = text
+        if self.engine:
+            self.engine.target_path = text
+        self.check_ready()
 
     def check_ready(self):
         s = STRINGS[self.current_language]
-        if self.source_path and self.target_path and self.engine:
+        # Allow typing if source file exists and engine is ready
+        source_valid = self.source_path and os.path.exists(self.source_path) and os.path.isfile(self.source_path)
+        
+        if source_valid and self.engine:
             self.start_btn.setEnabled(True)
             self.start_btn.setText(s['hold_to_start'])
             self.start_btn.setStyleSheet(self.start_btn_style_normal)
