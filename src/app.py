@@ -266,6 +266,7 @@ class PastyApp(QMainWindow):
         main_layout.addWidget(self.target_label)
         
         target_layout = QHBoxLayout()
+        self.target_path_label = QLabel("")
         self.target_path_label.setStyleSheet(input_style)
         target_layout.addWidget(self.target_path_label, 1)
         
